@@ -295,7 +295,7 @@ char* GPS_GetFixMode(void){
 }
 
 char* GPS_GetGPSQuality(void){
-	static char buffer[16];
+	static char buffer[20];
     switch(GPS.GPS_quality) {
         case 0:
             strcpy(buffer, "FIX NOT VALID");
@@ -304,22 +304,22 @@ char* GPS_GetGPSQuality(void){
             strcpy(buffer, "GPS FIX");
             break;
         case 2:
-            strcpy(buffer, "3D FIX");
+            strcpy(buffer, "DIFFERENTIAL FIX");
             break;
         case 3:
-            strcpy(buffer, "FIX NOT VALID");
+            strcpy(buffer, "NOT APPLICABLE");
             break;
         case 4:
-            strcpy(buffer, "GPS FIX");
+            strcpy(buffer, "RTK FIXED");
             break;
         case 5:
-            strcpy(buffer, "3D FIX");
+            strcpy(buffer, "RTK FLOAT");
             break;
         case 6:
-            strcpy(buffer, "3D FIX");
+            strcpy(buffer, "INS DEAD RECKONING");
             break;
         default:
-            strcpy(buffer, "FIX ERROR");
+            strcpy(buffer, "GPS QUALITY ERROR");
             break;
     }
 	return buffer;
