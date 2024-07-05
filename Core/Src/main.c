@@ -101,8 +101,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //if(GPS_IsDataReady())	GPS_PrintRXBuffer();
-
 	  if (gps_is_data_ready()) {
 		  gps_update_gps_data();
 		  gps_print_rx_buffer();
