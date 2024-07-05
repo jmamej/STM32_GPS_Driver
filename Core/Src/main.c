@@ -94,11 +94,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-
-  GPS_init();
-
-  extern NMEA_Data GPS;
-
+  gps_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -107,18 +103,9 @@ int main(void)
   {
 	  //if(GPS_IsDataReady())	GPS_PrintRXBuffer();
 
-	  if(GPS_IsDataReady()){
-		  GPS_GetData();
-
-		  printf("Loaction: %s\n", GPS_GetCompleteLocation());
-		  printf("Date: %s\n", GPS_GetCompleteDate());
-		  printf("Time: %s\n", GPS_GetCompleteTime(2));
-		  printf("SV visible: %d\n", GPS.satellites_visible);
-		  printf("SV in use: %d\n", GPS.satellites_in_use);
-		  printf("speed: %f km/h\n", GPS.ground_speed_kph);
-
-
-		  //GPS_PrintRXBuffer();
+	  if (gps_is_data_ready()) {
+		  gps_update_gps_data();
+		  gps_print_rx_buffer();
 	  }
 
     /* USER CODE END WHILE */
