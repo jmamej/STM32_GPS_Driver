@@ -6,19 +6,19 @@ code:
 
 int main(void){
 
-GPS_init();
+gps_init();
 extern NMEA_Data GPS;
 
   while (1){
-    if(GPS_IsDataReady()){
-      GPS_GetData();
-      GPS_PrintRXBuffer();
-      printf("Loaction: %s\n", GPS_GetCompleteLocation());
-      printf("Date: %s\n", GPS_GetCompleteDate());
-      printf("Time: %s\n", GPS_GetCompleteTime(2));
-      printf("SV visible: %d\n", GPS.satellites_visible);
-      printf("SV in use: %d\n", GPS.satellites_in_use);
-      printf("speed: %f km/h\n", GPS.ground_speed_kph);
+    if(gps_is_data_ready()){
+      gps_update_gps_data();
+      gps_print_rx_buffer();
+      printf("Loaction: %s\n", gps_complete_location_string());
+      printf("Date: %s\n", gps_complete_date_string());
+      printf("Time: %s\n", gps_complete_time_string(2));
+      printf("SV visible: %d\n", gps_satellites_visible);
+      printf("SV in use: %d\n", gps_satellites_in_use);
+      printf("speed: %f km/h\n", gps_speed_kph);
     }
   }
 }
@@ -49,79 +49,69 @@ check both boxes:
 ## main.c
 
 ```
+#include <stdio.h>
 #include "main.h"
 #include "GPS.h"
-#include <stdio.h>
 
 int main(void)
 {
-  GPS_init();
-  extern NMEA_Data GPS;  //only if you want to access raw data (GPS.latitude etc.) from main.c
+  gps_init();
+  extern NMEAData gps;  //only if you want to access raw data (GPS.latitude etc.) from main.c
 
-  while (1){
-    if(GPS_IsDataReady()){
-      GPS_GetData();
-      GPS_PrintRXBuffer();
-      printf("Loaction: %s\n", GPS_GetCompleteLocation());
-      printf("speed: %f km/h\n", GPS.ground_speed_kph);
-    }
+  while (1) {
+	  if (gps_is_data_ready()) {
+		  gps_update_gps_data();
+		  gps_print_rx_buffer();
+		  printf("Location: %s\n", gps_complete_location_string());
+		  printf("Date/Time: %s | %s\n", gps_complete_date_string(), gps_complete_time_string(2));
+		  printf("Fix mode: %s\n", gps_fix_mode_string());
+		  printf("GPS quality: %s\n", gps_quality_string());
+      printf("sattelites in use: %s\n", gps.satellites_in_use);
+	  }
   }
 }
 ```
 
-GPS_init() - initiates an asynchronous reception of data from a UART
+gps_init() - initiates an asynchronous reception of data from a UART
 
-extern NMEA_Data GPS - use only if you want to access raw data from main.c
+extern NMEAData gps - use only if you want to access raw data from main.c
 
-GPS_IsDataReady() - returns 1 when buffer is filled with data
+gps_is_data_ready() - returns 1 when buffer is filled with data
 
-GPS_PrintRXBuffer() - prints entire buffer
+gps_update_gps_data() - parses all nmea sentences and fills NMEAData struct elements with fresh data
 
-GPS_GetCompleteLocation() - returns string with location in readable form: GPS_GetLatitude() GPS_GetLatDirection(), GPS_GetLongitude() GPS_GetLonDirection()
+gps_print_rx_buffer() - prints entire buffer
 
-GPS.ground_speed_kph - raw data extracted from buffer
+gps_complete_location_string() - returns string with location in readable form: XX.XXXXXX N, XX.XXXXXX E
+
+gps.satellites_in_use - read data raw from struct
 
 
 ### Raw data:
 
 
 float latitude;
-
 char lat_direction;
-
 float longitude;
-
 char lon_direction;
-
 float altitude;
-
 float time;
-
 uint32_t date;
-
 int  satellites_visible;
-
 int  satellites_in_use;
-
 int fix_mode;
-
-int GPS_quality;
-
-float PDOP;
-
-float HDOP;
-
-float VDOP;
-
+int gps_quality;
+float pdop;
+float hdop;
+float vdop;
 float ground_speed_knots;
-
 float ground_speed_kph;
     
 
-### API's:
+### Functions:
 
-void GPS_init(void);  - initiates an asynchronous reception of data from a UART
-void GPS_GetData(void);  - decodes buffer into separate NMEA sentences and extracts data from each.
+void gps_init(void);  - initiates an asynchronous reception of data from a UART
+void gps_update_gps_data(void);  - decodes buffer into separate NMEA sentences and extracts data from each.
 
 GPS_GetData decodes only following NMEA sentences:
 
@@ -132,58 +122,57 @@ GPS_GetData decodes only following NMEA sentences:
 - $GPGSV
 - $GPGLL
 
-int GPS_IsDataReady(void);  - returns 1 when buffer is full and ready to decode
 
-void GPS_PrintRXBuffer(void);  - prints entire buffer
+int gps_is_data_ready(void);  - returns 1 when buffer is full and ready to decode
 
-char* GPS_GetCompleteLocation(void);  - returns location as string (latitude lat_direction, longitude lon_direction)
+void gps_update_gps_data(void);  -  fills NMEAData elements with data
 
-float GPS_GetLatitude(void);  - returns latitude
+void gps_print_rx_buffer(void);  -  prints entire rx buffer
 
-char GPS_GetLatDirection();  - returns lat_direction
+char* gps_complete_location_string(void);  - returns location as string (latitude lat_direction, longitude lon_direction)
 
-float GPS_GetLongitude(void);  - returns longitude
+float gps_latitude(void);  - returns latitude
 
-char GPS_GetLonDirection();  - returns lon_direction
+char gps_lat_direction(void);  - returns latitude direction 
 
-int GPS_GetAltitude(void);  - returns altitude
+float gps_longitude(void);  - returns longitude
 
-char* GPS_GetCompleteDate(void);  - returns date as string (DD/MM/YYYY)
+char gps_lon_direction(void);  - returns longitude direction
 
-int GPS_GetDay(void);  - returns day
+int gps_altitude(void);  - returns altitude
 
-int GPS_GetMonth(void);  - returns month
+char* gps_complete_date_string(void);  - returns date as string (DD/MM/YYYY)
 
-int GPS_GetYear(void); - returns year (YY)
+int gps_day(void);  - returns day
 
-int GPS_GetYearLong(void);  - returns year (YYYY)
+int gps_month(void);  - returns month
 
-char* GPS_GetCompleteTime(int offset);  - returns time as string (HH:MM:SS)
+int gps_year(void); - returns year (YY)
 
-int GPS_GetHour(int offset);  - returns hour accounting for time zone difference
+int gps_year_long_format(void);  - returns year (YYYY)
 
-int GPS_GetMinute(void);  - returns minute
+char* gps_complete_time_string(int offset);  - returns time as string (HH:MM:SS)
 
-int GPS_GetSecond(void);  - returns second
+int gps_hour(int offset);  - returns hour accounting for time zone difference
 
-int GPS_GetSatellitesVisible(void);  - returns ammount of visible satellites
+int gps_minute(void);  - returns minute
 
-int GPS_GetSatellitesInUse(void);  - returns ammount of connected satellites
+int gps_second(void);  - returns second
 
-char* GPS_GetFixMode(void);  - returns fix mode
+int gps_satellites_visible(void);  - returns ammount of visible satellites
 
-char* GPS_GetGPSQuality(void);  - returns GPS quality
+int gps_satellites_in_use(void);  - returns ammount of connected satellites
 
-float GPS_GetPDOP(void);    - returns PDOP
+char* gps_fix_mode_string(void);  - returns fix mode
 
-float GPS_GetHDOP(void);  - returns HDOP
+char* gps_quality_string(void);  - returns GPS quality
 
-float GPS_GetVDOP(void);  - returns VDOP
+float gps_pdop(void);  - returns PDOP
 
-float GPS_GetSpeedKnots(void);  - returns speed in knots
+float gps_hdop(void);  - returns HDOP
 
-float GPS_GetSpeedKph(void);  - returns speed in km/h
+float gps_vdop(void);  - returns VDOP
 
+float gps_speed_knots(void);  - returns speed in knots
 
-
-
+float gps_speed_kph(void);  - returns speed in km/h
