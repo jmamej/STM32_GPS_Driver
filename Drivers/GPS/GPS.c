@@ -12,20 +12,12 @@ extern UART_HandleTypeDef huart3;
 NMEAData gps;
 
 uint8_t received_byte;
-uint8_t rx_buffer[550];
+uint8_t rx_buffer[RX_BUFFER_LENGHT];
 volatile uint16_t rx_buffer_index = 0;
 uint8_t last_nmea_sentence_flag, gps_data_ready_flag;
 const char *nmea_id[] = {"RMC", "VTG", "GGA", "GSA", "GSV", "GLL"};
-char *substring_start[6] = {NULL};
-char *substring_stop[6] = {NULL};
-
-/* static local variable to store a single NMEA sentence */
-static char nmea_sentence_rmc[64];
-static char nmea_sentence_vtg[32];
-static char nmea_sentence_gga[72];
-static char nmea_sentence_gsa[64];
-static char nmea_sentence_gsv[64];
-static char nmea_sentence_gll[64];
+char *substring_start[NMEA_SENTENCES] = {NULL};
+uint8_t substring_length[NMEA_SENTENCES] = {0};
 
 /* static function prototypes */
 static void parse_rmc(void);
@@ -42,16 +34,16 @@ void gps_init(void) {
     HAL_UART_Receive_IT(GPS_UART, (uint8_t *)&received_byte, 1);
 }
 
-void gps_update_gps_data(void) {
+void gps_update_data(void) {
 	for (int i = 0; i < NMEA_SENTENCES; i++) {
 		substring_start[i] = strstr((char *)rx_buffer, nmea_id[i]) + 1;
 		if (substring_start[i] != NULL) {
 			substring_start[i] += strlen(nmea_id[i]);
-			substring_stop[i] = strstr(substring_start[i], "*");
-			if (substring_stop[i] != NULL) {
-				substring_stop[i] += 1;
+			substring_length[i] = strstr(substring_start[i], "*") - substring_start[i];
+			if (substring_length[i] > 0) {
+				substring_length[i] += 1;
 			} else {
-				substring_stop[i] = (char *)rx_buffer + strlen((char *)rx_buffer);
+				substring_length[i] = strlen(substring_start[i]);
 			}
 		}
 	}
@@ -73,15 +65,16 @@ int gps_is_data_ready(void) {
 void gps_print_rx_buffer(void) {
 	printf("\n----rxBuffer_START----\n\n");
 	printf("%s\n", rx_buffer);
-	printf("----rxBuffer_STOP----\n");
+	printf("----rxBuffer_STOP----\n\n");
 }
 
 void parse_rmc(void) {
-	snprintf(nmea_sentence_rmc, substring_stop[0] - substring_start[0], "%s", substring_start[0]);
-	sscanf(nmea_sentence_rmc, "%f,%*c,%f,%c,%f,%c,%f,,%lu,,,%*c", &gps.time, &gps.latitude, &gps.lat_direction, &gps.longitude, &gps.lon_direction, &gps.ground_speed_knots, &gps.date);
+	char *temp_nmea_sentence = (char *)malloc(substring_length[0] + 1);
+	snprintf(temp_nmea_sentence, substring_length[0], "%s", substring_start[0]);
+	sscanf(temp_nmea_sentence, "%f,%*c,%f,%c,%f,%c,%f,,%lu,,,%*c", &gps.time, &gps.latitude, &gps.lat_direction, &gps.longitude, &gps.lon_direction, &gps.ground_speed_knots, &gps.date);
 
 #ifdef PRINT_DEBUGGER
-	printf("RMC: %s\n", nmea_sentence_rmc);
+	printf("RMC: %s\n", temp_nmea_sentence);
 	printf("Time: %f\n", gps.time);
 	printf("Latitude: %f\n", gps.latitude);
 	printf("Lat_dir: %c\n", gps.lat_direction);
@@ -91,26 +84,30 @@ void parse_rmc(void) {
 	printf("Date: %lu\n", gps.date);
 	printf("\n");
 #endif
+	free(temp_nmea_sentence);
 }
 
 void parse_vtg(void) {
-	snprintf(nmea_sentence_vtg, substring_stop[1] - substring_start[1], "%s", substring_start[1]);
-	sscanf(nmea_sentence_vtg, ",%*c,,%*c,%f,%*c,%f,%*c,%*c", &gps.ground_speed_knots, &gps.ground_speed_kph);
+	char *temp_nmea_sentence = (char *)malloc(substring_length[1] + 1);
+	snprintf(temp_nmea_sentence, substring_length[1], "%s", substring_start[1]);
+	sscanf(temp_nmea_sentence, ",%*c,,%*c,%f,%*c,%f,%*c,%*c", &gps.ground_speed_knots, &gps.ground_speed_kph);
 
 #ifdef PRINT_DEBUGGER
-	printf("VTG: %s\n", nmea_sentence_vtg);
+	printf("VTG: %s\n", temp_nmea_sentence);
 	printf("Speed knots: %f\n", gps.ground_speed_knots);
 	printf("Speed km/h: %f\n", gps.ground_speed_kph);
 	printf("\n");
 #endif
+	free(temp_nmea_sentence);
 }
 
 void parse_gga(void) {
-	snprintf(nmea_sentence_gga, substring_stop[2] - substring_start[2], "%s", substring_start[2]);
-	sscanf(nmea_sentence_gga, "%f,%f,%c,%f,%c,%d,%d,%f,%f,%*c,%*f,%*c,,", &gps.time, &gps.latitude, &gps.lat_direction, &gps.longitude, &gps.lon_direction, &gps.gps_quality, &gps.satellites_in_use, &gps.hdop, &gps.altitude);
+	char *temp_nmea_sentence = (char *)malloc(substring_length[2] + 1);
+	snprintf(temp_nmea_sentence, substring_length[2], "%s", substring_start[2]);
+	sscanf(temp_nmea_sentence, "%f,%f,%c,%f,%c,%d,%d,%f,%f,%*c,%*f,%*c,,", &gps.time, &gps.latitude, &gps.lat_direction, &gps.longitude, &gps.lon_direction, &gps.gps_quality, &gps.satellites_in_use, &gps.hdop, &gps.altitude);
 
 #ifdef PRINT_DEBUGGER
-	printf("GGA: %s\n", nmea_sentence_gga);
+	printf("GGA: %s\n", temp_nmea_sentence);
 	printf("Time: %f\n", gps.time);
 	printf("Latitude: %f\n", gps.latitude);
 	printf("Lat_dir: %c\n", gps.lat_direction);
@@ -122,44 +119,50 @@ void parse_gga(void) {
 	printf("Altitude: %f\n", gps.altitude);
 	printf("\n");
 #endif
+	free(temp_nmea_sentence);
 }
 
 void parse_gsa(void) {
-	snprintf(nmea_sentence_gsa, substring_stop[3] - substring_start[3], "%s", substring_start[3]);
-	sscanf(nmea_sentence_gsa, "%*c,%d", &gps.fix_mode);
+	char *temp_nmea_sentence = (char *)malloc(substring_length[3] + 1);
+	snprintf(temp_nmea_sentence, substring_length[3], "%s", substring_start[3]);
+	sscanf(temp_nmea_sentence, "%*c,%d", &gps.fix_mode);
 	/* Length of GSA may differ depending on amount of connected satellites, while loop searches for 14'th comma - where PDOP, HDOP, VDOP data starts */
 	int coma_counter = 0;
 	int index = 0;
-	while(coma_counter != 14)	if(nmea_sentence_gsa[index++] == ',')	coma_counter++;
-	sscanf(nmea_sentence_gsa + index, "%f,%f,%f", &gps.pdop, &gps.hdop, &gps.vdop);
+	while(coma_counter != 14)	if(temp_nmea_sentence[index++] == ',')	coma_counter++;
+	sscanf(temp_nmea_sentence + index, "%f,%f,%f", &gps.pdop, &gps.hdop, &gps.vdop);
 
 #ifdef PRINT_DEBUGGER
-	printf("GSA: %s\n", nmea_sentence_gsa);
+	printf("GSA: %s\n", temp_nmea_sentence);
 	printf("Fix mode: %d\n", gps.fix_mode);	//1 - no fix | 2 - 2D | 3 - 3D |
 	printf("PDOP: %f\n", gps.pdop);
 	printf("HDOP: %f\n", gps.hdop);
 	printf("VDOP: %f\n", gps.vdop);
 	printf("\n");
 #endif
+	free(temp_nmea_sentence);
 }
 
 void parse_gsv(void) {
-	snprintf(nmea_sentence_gsv, substring_stop[4] - substring_start[4], "%s", substring_start[4]);
-	sscanf(nmea_sentence_gsv, "%*d,%*d,%d", &gps.satellites_visible);
+	char *temp_nmea_sentence = (char *)malloc(substring_length[4] + 1);
+	snprintf(temp_nmea_sentence, substring_length[4], "%s", substring_start[4]);
+	sscanf(temp_nmea_sentence, "%*d,%*d,%d", &gps.satellites_visible);
 
 #ifdef PRINT_DEBUGGER
-	printf("GSV: %s\n", nmea_sentence_gsv);
+	printf("GSV: %s\n", temp_nmea_sentence);
 	printf("satellites_visible: %d\n", gps.satellites_visible);
 	printf("\n");
 #endif
+	free(temp_nmea_sentence);
 }
 
 void parse_gll(void) {
-	snprintf(nmea_sentence_gll, substring_stop[5] - substring_start[5], "%s", substring_start[5]);
-	sscanf(nmea_sentence_gll, "%f,%c,%f,%c,%f,%*c,%*c", &gps.latitude, &gps.lat_direction, &gps.longitude, &gps.lon_direction, &gps.time);
+	char *temp_nmea_sentence = (char *)malloc(substring_length[5] + 1);
+	snprintf(temp_nmea_sentence, substring_length[5], "%s", substring_start[5]);
+	sscanf(temp_nmea_sentence, "%f,%c,%f,%c,%f,%*c,%*c", &gps.latitude, &gps.lat_direction, &gps.longitude, &gps.lon_direction, &gps.time);
 
 #ifdef PRINT_DEBUGGER
-	printf("GLL: %s\n", nmea_sentence_gll);
+	printf("GLL: %s\n", temp_nmea_sentence);
 	printf("Latitude: %f\n", gps.latitude);
 	printf("Lat_dir: %c\n", gps.lat_direction);
 	printf("longitude: %f\n", gps.longitude);
@@ -167,6 +170,7 @@ void parse_gll(void) {
 	printf("Time: %f\n", gps.time);
 	printf("\n");
 #endif
+	free(temp_nmea_sentence);
 }
 
 char* gps_complete_location_string(void) {
@@ -334,13 +338,11 @@ float gps_speed_kph(void) {
 	return gps.ground_speed_kph;
 }
 
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	if (huart == GPS_UART) {
-		received_byte = huart->Instance->RDR;
 		rx_buffer[rx_buffer_index++] = received_byte;
 		if (received_byte == 'L')	last_nmea_sentence_flag = 1;
-		else if (received_byte == '\n' && last_nmea_sentence_flag) {
+		else if (rx_buffer_index >= RX_BUFFER_LENGHT || (received_byte == '\n' && last_nmea_sentence_flag)) {
 			rx_buffer[rx_buffer_index++] = '\0';
 			rx_buffer_index = 0;
 			last_nmea_sentence_flag = 0;
@@ -349,4 +351,3 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 		HAL_UART_Receive_IT(GPS_UART, (uint8_t *)&received_byte, 1);
 	}
 }
-

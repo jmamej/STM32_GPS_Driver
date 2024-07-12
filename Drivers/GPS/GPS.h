@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define NMEA_SENTENCES	6
+#define RX_BUFFER_LENGHT	550
 
 typedef struct {
     float latitude;
@@ -26,14 +27,14 @@ typedef struct {
 
 /* function prototypes */
 void gps_init(void);
-void gps_update_gps_data(void);
+void gps_update_data(void);
 int gps_is_data_ready(void);
 void gps_print_rx_buffer(void);
 char* gps_complete_location_string(void);
 float gps_latitude(void);
-char gps_lat_direction();
+char gps_lat_direction(void);
 float gps_longitude(void);
-char gps_lon_direction();
+char gps_lon_direction(void);
 int gps_altitude(void);
 char* gps_complete_date_string(void);
 int gps_day(void);
