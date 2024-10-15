@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 #define	GPS_UART	&huart1
+#define NMEA_SENTENCES	6
+#define LOWEST_BUFFER_SIZE	300
 #define RX_BUFFER_SIZE  550
 
 typedef struct {
@@ -17,42 +19,42 @@ typedef struct {
     int  satellites_visible;
     int  satellites_in_use;
     int fix_mode;
-    int GPS_quality;
-    float PDOP;				//precision | <1 - excellent | 1-2 - good | 2-5 - moderate | >5 - bad |
-    float HDOP;				//precision | <1 - excellent | 1-2 - good | 2-5 - moderate | >5 - bad |
-    float VDOP;				//precision | <1 - excellent | 1-2 - good | 2-5 - moderate | >5 - bad |
+    int gps_quality;
+    float pdop;				/* precision | <1 - excellent | 1-2 - good | 2-5 - moderate | >5 - bad | */
+    float hdop;				/* precision | <1 - excellent | 1-2 - good | 2-5 - moderate | >5 - bad | */
+    float vdop;				/* precision | <1 - excellent | 1-2 - good | 2-5 - moderate | >5 - bad | */
     float ground_speed_knots;
     float ground_speed_kph;
-} NMEA_Data;
+} NMEAData;
 
 
-void GPS_init(void);
-int GPS_GetData(void);
-int GPS_IsDataReady(void);
-void GPS_PrintRXBuffer(void);
-char* GPS_GetCompleteLocation(void);
-float GPS_GetLatitude(void);
-char GPS_GetLatDirection();
-float GPS_GetLongitude(void);
-char GPS_GetLonDirection();
-int GPS_GetAltitude(void);
-char* GPS_GetCompleteDate(void);
-int GPS_GetDay(void);
-int GPS_GetMonth(void);
-int GPS_GetYear(void);
-int GPS_GetYearLong(void);
-char* GPS_GetCompleteTime(int offset);
-int GPS_GetHour(int offset);
-int GPS_GetMinute(void);
-int GPS_GetSecond(void);
-int GPS_GetSatellitesVisible(void);
-int GPS_GetSatellitesInUse(void);
-char* GPS_GetFixMode(void);
-char* GPS_GetGPSQuality(void);
-float GPS_GetPDOP(void);
-float GPS_GetHDOP(void);
-float GPS_GetVDOP(void);
-float GPS_GetSpeedKnots(void);
-float GPS_GetSpeedKph(void);
+void gps_init(void);
+int gps_get_data(void);
+int gps_is_data_ready(void);
+void gps_print_rx_buffer(void);
+char* gps_complete_location_string(void);
+float gps_latitude(void);
+char gps_lat_direction(void);
+float gps_longitude(void);
+char gps_lon_direction(void);
+int gps_altitude(void);
+char* gps_complete_date_string(void);
+int gps_day(void);
+int gps_month(void);
+int gps_year(void);
+int gps_year_long_format(void);
+char* gps_complete_time_string(int offset);
+int gps_hour(int offset);
+int gps_minute(void);
+int gps_second(void);
+int gps_satellites_visible(void);
+int gps_satellites_in_use(void);
+char* gps_fix_mode_string(void);
+char* gps_quality_string(void);
+float gps_pdop(void);
+float gps_hdop(void);
+float gps_vdop(void);
+float gps_speed_knots(void);
+float gps_speed_kph(void);
 
 #endif /* GPS_H */
