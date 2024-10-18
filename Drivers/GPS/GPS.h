@@ -6,7 +6,8 @@
 #define	GPS_UART	&huart1
 #define NMEA_SENTENCES	6
 #define LOWEST_BUFFER_SIZE	300
-#define RX_BUFFER_SIZE  550
+#define RX_BUFFER_SIZE  560
+#define UART_IDLE_TIMEOUT	50
 
 typedef struct {
     float latitude;
@@ -31,6 +32,7 @@ typedef struct {
 void gps_init(void);
 int gps_get_data(void);
 int gps_is_data_ready(void);
+void gps_print_index(void);
 void gps_print_rx_buffer(void);
 char* gps_complete_location_string(void);
 float gps_latitude(void);

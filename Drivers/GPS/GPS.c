@@ -15,7 +15,7 @@ uint8_t received_byte;
 uint8_t rx_buffer[RX_BUFFER_SIZE];
 volatile uint16_t rx_buffer_index = 0;
 uint8_t gps_data_ready_flag;
-uint32_t rx_data_timer = 0;
+uint32_t rx_data_timer = 0, rx_data_timer_last;
 
 const char *nmea_id[] = {"RMC", "VTG", "GGA", "GSA", "GSV", "GLL"};
 char *substring_start[NMEA_SENTENCES] = {NULL};
@@ -83,7 +83,6 @@ int gps_get_data(void){
 #endif
 
 	gps_data_ready_flag = 0;
-	rx_buffer_index = 0;
 
 	return 1;
 }
@@ -91,25 +90,27 @@ int gps_get_data(void){
 int gps_is_data_ready(){
 	uint32_t current_time = HAL_GetTick();
 
-	if(gps_data_ready_flag) {
-		return 1;
-	}
-	else {
-		if(current_time >= (rx_data_timer + 5) && rx_buffer[rx_buffer_index-1] == 0x0A && rx_buffer[rx_buffer_index-2] == 0x0D) {
-			if(rx_buffer_index <= LOWEST_BUFFER_SIZE) {
-				rx_buffer_index = 0;
-				return 0;
-			}
+	if(current_time >= (rx_data_timer + UART_IDLE_TIMEOUT) && gps_data_ready_flag) {
+		if(rx_buffer[rx_buffer_index-1] == 0x0A && rx_buffer[rx_buffer_index-2] == 0x0D && rx_buffer[5] == 'C') {	//$GPRM'C'
 			return 1;
 		}
 	}
 	return 0;
 }
 
+void gps_print_index(void) {
+	printf("Index: %d\n", rx_buffer_index - 1);
+}
+
 void gps_print_rx_buffer(){
-	printf("\n----rxBuffer_START----\n\n");
-	printf("%.*s\n\n", rx_buffer_index-1, rx_buffer);
-	printf("----rxBuffer_STOP----\n\n");
+	if(gps_is_data_ready()) {
+		printf("\n----rxBuffer_START----\n\n");
+		gps_print_index();
+		printf("%.*s\n\n", rx_buffer_index-1, rx_buffer);
+		printf("----rxBuffer_STOP----\n\n");
+	} else {
+		printf("----data_not_ready----\n\n");
+	}
 }
 
 void parse_rmc(void) {
@@ -386,12 +387,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart == GPS_UART)
 	{
-		if(rx_buffer_index < RX_BUFFER_SIZE) {
-			rx_data_timer = HAL_GetTick();
-			rx_buffer[rx_buffer_index++] = received_byte;
-		} else {
+		rx_data_timer = HAL_GetTick();
+		if(rx_data_timer > rx_data_timer_last + UART_IDLE_TIMEOUT) {
+			rx_buffer_index = 0;
 			gps_data_ready_flag = 1;
 		}
+		if(rx_buffer_index < RX_BUFFER_SIZE) {
+			rx_buffer[rx_buffer_index++] = received_byte;
+		}
+		rx_data_timer_last = rx_data_timer;
 		HAL_UART_Receive_IT(GPS_UART, (uint8_t *)&received_byte, 1);
 	}
 }
